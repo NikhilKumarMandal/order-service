@@ -1,7 +1,8 @@
 import { Consumer, EachMessagePayload, Kafka } from "kafkajs";
 import { MessageBroker } from "../types/broker";
 
-export class KafkaBroker implements MessageBroker{
+
+export class kafkaBroker implements MessageBroker{
     private consumer: Consumer;
 
     constructor(clientId: string, brokers: string[]) {
@@ -13,15 +14,16 @@ export class KafkaBroker implements MessageBroker{
     /**
      * connect the consumer
      */
-    async connect() {
+
+    async connectConsumer() {
         await this.consumer.connect()
-    };
+    }
 
     /**
      * disconnect the consumer
      */
 
-    async disconnect() {
+    async disconnectConsumer() {
         await this.consumer.disconnect()
     };
 
@@ -29,22 +31,18 @@ export class KafkaBroker implements MessageBroker{
      * 
      */
 
-    async messageConsume(topics: string[], fromBeginning: boolean = false) {
-        await this.consumer.subscribe({topics,fromBeginning})
+    async consumeMessage(topics: string[], fromBeginning: boolean = false) {
+
+        await this.consumer.subscribe({ topics, fromBeginning })
+        
         await this.consumer.run({
-            eachMessage: async ({
-                topic,
+            eachMessage: async ({topic,partition,message}) => {
+            console.log({
+                value: message.value.toString(),
                 partition,
-                message }: EachMessagePayload) => {
-                console.log({
-                    value: message.value.toString(),
-                    topic,
-                    partition,
-                });
-                
+                topic
+                })
             }
         })
-    } 
-
-    
-} 
+    }
+}
