@@ -7,5 +7,6 @@ const router = Router();
 const coupanController = new CoupanController()
 
 router.post("/",asyncWrapper(coupanController.create))
+router.get("/:coupanId",asyncWrapper(coupanController.getAll))
 
 export default router

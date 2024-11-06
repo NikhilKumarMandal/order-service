@@ -25,25 +25,40 @@ export class CustomerController{
         res.json(customer)
     }
 
-    addAdress = async (req: Request, res: Response) => {
-        const { sub: userId } = req.auth;
+addAdress = async (req: Request, res: Response) => {
+    try {
+        const { sub: userId } = req.auth; 
 
-        const customer = await customerModel.findByIdAndUpdate(
+        if (!req.body.address || typeof req.body.address !== 'string' || req.body.address.trim() === '') {
+            return res.status(400).json({ message: 'Address is required and must be a non-empty string.' });
+        }
+
+        const customer = await customerModel.findOneAndUpdate(
             {
-            _id: req.params.id,
-            userId 
+                _id: req.params.id, 
+                userId 
             },
             {
                 $push: {
-                    text: req.body.address,
-                    isDefault: false
+                    addresses: {
+                        text: req.body.address, 
+                        isDefault: false 
+                    }
                 }
             },
             {
-                new: true
+                new: true 
             }
         );
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
 
-        return res.json(customer)
+        return res.json({ message: 'Address added successfully', customer });
+    } catch (error) {
+        console.error(error); 
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
+};
+
 }
