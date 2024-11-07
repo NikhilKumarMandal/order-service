@@ -2,13 +2,26 @@ import {Request, Response } from "express";
 import { CartItem, ProductPricingCache, Topping, ToppingPriceCache } from "../types";
 import productCacheModel from "../productCache/productCache.model";
 import toppingCacheModel from "../toppingCache/toppingCache.model";
+import coupanModel from "../coupon/coupan.model";
 
 
 export class OrderController{
 
     create = async (req: Request, res: Response) => {
        
-        const totalPrice = await this.calculateTotal(req.body.cart)
+        const totalPrice = await this.calculateTotal(req.body.cart);
+
+        let discountPercentage = 0;
+        let couponCode = req.body.couponCode;
+        let tenantId = req.body.tenantId;
+
+        if (couponCode) {
+            discountPercentage = await this.calcluateDiscountPercentage(couponCode,tenantId)
+        }
+
+        const discountPrice = Math.round((totalPrice * discountPercentage) / 100)
+
+        return res.json({discountPrice})
     };
 
     private calculateTotal = async(cart:CartItem[]) => {
@@ -72,4 +85,22 @@ export class OrderController{
 
         return currentTopping.price;
     }
+
+    private calcluateDiscountPercentage = async (coupanCode: string,tenantId: string) => {
+        const code = await coupanModel.findOne({ code: coupanCode, tenantId });
+
+        if (!code) {
+            return 0;
+        }
+
+        let currentDate = new Date();
+        let coupanDate = new Date(code.validUpto);
+
+        if (currentDate <= coupanDate) {
+            return code.discount
+        }
+
+        return 0
+
+    } 
 }
