@@ -3,17 +3,27 @@ import { CartItem, ProductPricingCache, Topping, ToppingPriceCache } from "../ty
 import productCacheModel from "../productCache/productCache.model";
 import toppingCacheModel from "../toppingCache/toppingCache.model";
 import coupanModel from "../coupon/coupan.model";
+import orderModel from "./order.model";
+import { OrderStatus, PaymentStatus } from "./order.types";
 
 
 export class OrderController{
 
     create = async (req: Request, res: Response) => {
+
+    const {
+      cart,
+      couponCode,
+      tenantId,
+      paymentMode,
+      customerId,
+      comment,
+      address,
+    } = req.body;
        
-        const totalPrice = await this.calculateTotal(req.body.cart);
+        const totalPrice = await this.calculateTotal(cart);
 
         let discountPercentage = 0;
-        let couponCode = req.body.couponCode;
-        let tenantId = req.body.tenantId;
 
         if (couponCode) {
             discountPercentage = await this.calcluateDiscountPercentage(couponCode,tenantId)
@@ -30,7 +40,22 @@ export class OrderController{
         let DELIVERY_CHARGES = 100
         const finalPrice = priceAfterDiscount + discountPrice + DELIVERY_CHARGES
 
-        return res.json({finalPrice: finalPrice})
+        const newOrder = await orderModel.create({
+             cart,
+              address,
+              comment,
+              customerId,
+              deliveryCharges: DELIVERY_CHARGES,
+              discount: discountPrice,
+              taxes,
+              tenantId,
+              total: finalPrice,
+              paymentMode,
+              orderStatus: OrderStatus.RECEIVED,
+              paymentStatus: PaymentStatus.PENDING,
+        })
+
+        return res.json({newOrder: newOrder})
     };
 
     private calculateTotal = async(cart:CartItem[]) => {
